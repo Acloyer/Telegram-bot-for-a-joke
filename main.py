@@ -42,9 +42,11 @@ counters = {
 def is_admin(user_id: int) -> bool:
     return user_id == ADMIN_ID
 
+
 def get_delta() -> datetime.timedelta:
     now = datetime.datetime.now()
     return max(TRIP_TIME - now, datetime.timedelta(0))
+
 
 def get_minutes_left() -> int:
     return int(get_delta().total_seconds() // 60)
@@ -64,6 +66,7 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text += "/stats — показать статистику\n"
     await update.message.reply_text(text)
 
+
 async def time_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     counters["time_requests"] += 1
     minutes = get_minutes_left()
@@ -75,16 +78,25 @@ async def time_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("Next", callback_data="next")]
     ]
     markup = InlineKeyboardMarkup(kb)
-    await update.message.reply_text(f"⏳ Осталось: {minutes} минут до поездки!", reply_markup=markup)
+    await update.message.reply_text(
+        f"⏳ Осталось: {minutes} минут до поездки!",
+        reply_markup=markup
+    )
+
 
 async def next_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if next_send_time:
         delta = next_send_time - datetime.datetime.now()
         mins = int(delta.total_seconds() // 60)
         secs = int(delta.total_seconds() % 60)
-        await update.message.reply_text(f"📡 Следующее автосообщение через {mins} мин {secs} сек")
+        await update.message.reply_text(
+            f"📡 Следующее автосообщение через {mins} мин {secs} сек"
+        )
     else:
-        await update.message.reply_text("🕑 Расписание автосообщений ещё не установлено.")
+        await update.message.reply_text(
+            "🕑 Расписание автосообщений ещё не установлено."
+        )
+
 
 async def mute_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global is_muted
@@ -93,12 +105,14 @@ async def mute_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     is_muted = True
     await update.message.reply_text("🔕 Автосообщения отключены.")
 
+
 async def unmute_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     global is_muted
     if not is_admin(update.effective_user.id):
         return await update.message.reply_text("❌ У тебя нет прав.")
     is_muted = False
     await update.message.reply_text("🔔 Автосообщения включены.")
+
 
 async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
@@ -111,6 +125,7 @@ async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("✅ Сообщение отправлено.")
     except Exception as e:
         await update.message.reply_text(f"❌ Ошибка: {e}")
+
 
 async def panic_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
@@ -125,20 +140,28 @@ async def panic_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Ошибка: {e}")
 
+
 async def piska_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return await update.message.reply_text("❌ У тебя нет прав.")
     mins = get_minutes_left()
-    phrase = "Все уже сбрили себе письки? Потому что осталось всего {minutes} до того как все встретятся!".format(minutes=mins)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=phrase)
+    phrase = (
+        "Все уже сбрили себе письки? Потому что осталось всего {minutes} до того как все встретятся!"
+        .format(minutes=mins)
+    )
+    await context.bot.send_message(
+        chat_id=update.effective_chat.id,
+        text=phrase
+    )
     counters["messages_sent"] += 1
-    options = ["Побрил", "Не побрил"]
+    options = ["Побрил(-а) 😊👌", "Не побрил(-а) 😍😘"]
     await context.bot.send_poll(
         chat_id=update.effective_chat.id,
-        question="Кто сбрили письки?",
+        question="Кто сбрили свою письку?",
         options=options,
         is_anonymous=False
     )
+
 
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
@@ -152,6 +175,7 @@ async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"Muted: {'Да' if is_muted else 'Нет'}"
     )
     await update.message.reply_text(text)
+
 
 async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -175,11 +199,30 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     elif data == "next":
         await next_command(update, context)
 
+
 async def countdown_loop(bot: Bot):
     global next_send_time
+    polls = {
+        "письки": (
+            "Кто сбрили свою письку?",
+            ["Побрил(-а) 😊👌", "Не побрил(-а) 😍😘"]
+        ),
+        "тима": (
+            "Тима вырвет на аттракционах?",
+            ["Вырвет 🤢🤮", "Не вырвет 💪💪"]
+        ),
+        "зарифа": (
+            "Зарифа вырвет на аттракционах?",
+            ["Вырвет 🤣🤣", "Не вырвет 😒😒"]
+        ),
+        "рафиг": (
+            "Рафиг вырвет на аттракционах?",
+            ["Вырвет 😢😭", "Не вырвет 🤩🤗"]
+        ),
+    }
     while True:
         delta = get_delta()
-        mins = int(delta.total_seconds()//60)
+        mins = int(delta.total_seconds() // 60)
         if mins <= 0:
             await bot.send_message(chat_id=CHAT_ID, text="Поездка уже началась! 🚌💨")
         else:
@@ -187,43 +230,22 @@ async def countdown_loop(bot: Bot):
                 phrase = random.choice(PHRASES).format(minutes=mins)
                 await bot.send_message(chat_id=CHAT_ID, text=phrase)
                 counters["messages_sent"] += 1
-                if "письки" in phrase.lower():
-                    options = ["Побрил(-а) 😊👌", "Не побрил(-а) 😍😘"]
-                    await bot.send_poll(
-                        chat_id=CHAT_ID,
-                        question="Кто сбрил свою письку?",
-                        options=options,
-                        is_anonymous=False
-                    )
-		if "тима" in phrase.lower():
-                    options = ["Вырвет 🤢🤮", "Не вырвет 💪💪"]
-                    await bot.send_poll(
-                        chat_id=CHAT_ID,
-                        question="Тима вырвет на аттракционах?",
-                        options=options,
-                        is_anonymous=False
-                    )
-		if "зарифа" in phrase.lower():
-                    options = ["Вырвет 🤣🤣", "Не вырвет 😒😒"]
-                    await bot.send_poll(
-                        chat_id=CHAT_ID,
-                        question="Залифа вырвет на аттракционах?",
-                        options=options,
-                        is_anonymous=False
-                    )
-		if "рафиг" in phrase.lower():
-                    options = ["Вырвет 😢😭", "Не вырвет 🤩🤗"]
-                    await bot.send_poll(
-                        chat_id=CHAT_ID,
-                        question="Рафиг вырвет на аттракционах?",
-                        options=options,
-                        is_anonymous=False
-                    )
+                lower_phrase = phrase.lower()
+                for key, (question, options) in polls.items():
+                    if key in lower_phrase:
+                        await bot.send_poll(
+                            chat_id=CHAT_ID,
+                            question=question,
+                            options=options,
+                            is_anonymous=False
+                        )
         next_send_time = datetime.datetime.now() + datetime.timedelta(seconds=3600)
         await asyncio.sleep(3600)
 
+
 async def post_init(app):
     asyncio.create_task(countdown_loop(app.bot))
+
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).post_init(post_init).build()

@@ -132,7 +132,6 @@ async def piska_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     phrase = "Все уже сбрили себе письки? Потому что осталось всего {minutes} до того как все встретятся!".format(minutes=mins)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=phrase)
     counters["messages_sent"] += 1
-    # Запустить голосование
     options = ["Побрил", "Не побрил"]
     await context.bot.send_poll(
         chat_id=update.effective_chat.id,

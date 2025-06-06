@@ -39,8 +39,6 @@ async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Ошибка: {e}")
 
-app.add_handler(CommandHandler("broadcast", broadcast_command))
-
 async def panic_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         await update.message.reply_text("❌ У тебя нет прав.")
@@ -54,8 +52,6 @@ async def panic_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("✅ Паника отправлена.")
     except Exception as e:
         await update.message.reply_text(f"❌ Ошибка: {e}")
-
-app.add_handler(CommandHandler("panic", panic_command))
 
 
 def get_minutes_left():
@@ -86,5 +82,7 @@ async def post_init(app):
 if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).post_init(post_init).build()
     app.add_handler(CommandHandler("time", time_command))
+    app.add_handler(CommandHandler("broadcast", broadcast_command))
+    app.add_handler(CommandHandler("panic", panic_command))
     print("Бот запущен!")
     app.run_polling()

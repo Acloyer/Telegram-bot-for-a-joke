@@ -21,6 +21,43 @@ PHRASES = [
     "Каждая минута приближает тебя к великому приключению. Осталось {minutes}!",
 ]
 
+ADMIN_ID = 1822862999
+
+def is_admin(user_id):
+    return user_id == ADMIN_ID
+
+async def broadcast_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        await update.message.reply_text("❌ У тебя нет прав.")
+        return
+    
+    try:
+        chat_id = int(context.args[0])
+        message_text = " ".join(context.args[1:])
+        await context.bot.send_message(chat_id=chat_id, text=message_text)
+        await update.message.reply_text("✅ Сообщение отправлено.")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка: {e}")
+
+app.add_handler(CommandHandler("broadcast", broadcast_command))
+
+async def panic_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        await update.message.reply_text("❌ У тебя нет прав.")
+        return
+    
+    try:
+        chat_id = int(context.args[0])
+        minutes = get_minutes_left()
+        phrase = random.choice(PHRASES).format(minutes=minutes)
+        await context.bot.send_message(chat_id=chat_id, text=phrase)
+        await update.message.reply_text("✅ Паника отправлена.")
+    except Exception as e:
+        await update.message.reply_text(f"❌ Ошибка: {e}")
+
+app.add_handler(CommandHandler("panic", panic_command))
+
+
 def get_minutes_left():
     now = datetime.datetime.now()
     delta = TRIP_TIME - now

@@ -23,6 +23,9 @@ PHRASES = [
     "Ты уже пахнешь Сумгаитом... {minutes} минут осталось!",
     "Если ты не готов - это твои проблемы. {minutes} минут!",
     "Все уже сбрили себе письки? Потому что осталось всего {minutes} до того как все встретятся!",
+    "Как думаете Тима вырвет? Узнаем через {minutes} минут :))",
+    "Как думаете Зарифа вырвет? Узнаем через {minutes} минут 🤮🤢",
+    "Как думаете Рафиг вырвет? Узнаем через {minutes} минут 😤😤",
     "Чувствуете этот вайб?... Это же тот самый вайб когда осталось {minutes} до Сумгаита!",
     "Каждая минута приближает тебя к великому приключению. Осталось {minutes}!",
 ]
@@ -57,13 +60,13 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text += "\nАдмин-команды:\n"
         text += "/broadcast <chat_id> <msg> — отправить в группу любой текст\n"
         text += "/panic <chat_id> — отправить рофлофразу сейчас\n"
+        text += "/piska — отправить брутальную фразу и запустить голосование\n"
         text += "/stats — показать статистику\n"
     await update.message.reply_text(text)
 
 async def time_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     counters["time_requests"] += 1
     minutes = get_minutes_left()
-    # build inline buttons
     kb = [
         [InlineKeyboardButton("Минуты", callback_data="fmt_minutes"),
          InlineKeyboardButton("Часы", callback_data="fmt_hours")],
@@ -122,12 +125,28 @@ async def panic_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception as e:
         await update.message.reply_text(f"❌ Ошибка: {e}")
 
+async def piska_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_admin(update.effective_user.id):
+        return await update.message.reply_text("❌ У тебя нет прав.")
+    mins = get_minutes_left()
+    phrase = "Все уже сбрили себе письки? Потому что осталось всего {minutes} до того как все встретятся!".format(minutes=mins)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=phrase)
+    counters["messages_sent"] += 1
+    # Запустить голосование
+    options = ["Побрил", "Не побрил"]
+    await context.bot.send_poll(
+        chat_id=update.effective_chat.id,
+        question="Кто сбрили письки?",
+        options=options,
+        is_anonymous=False
+    )
+
 async def stats_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_admin(update.effective_user.id):
         return await update.message.reply_text("❌ У тебя нет прав.")
     text = (
         f"📊 Статистика:\n"
-        f"Сообщений отправлено (авто): {counters['messages_sent']}\n"
+        f"Авто-сообщения: {counters['messages_sent']}\n"
         f"Broadcast: {counters['broadcast_count']}\n"
         f"Panic: {counters['panic_count']}\n"
         f"Time-запросов: {counters['time_requests']}\n"
@@ -155,11 +174,10 @@ async def callback_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             out = f"🔄 Обновлено: {int(delta.total_seconds()//60)} мин"
         await query.edit_message_text(out, reply_markup=query.message.reply_markup)
     elif data == "next":
-        # имитируем вызов /next
         await next_command(update, context)
 
 async def countdown_loop(bot: Bot):
-    global next_send_time, counters
+    global next_send_time
     while True:
         delta = get_delta()
         mins = int(delta.total_seconds()//60)
@@ -170,6 +188,38 @@ async def countdown_loop(bot: Bot):
                 phrase = random.choice(PHRASES).format(minutes=mins)
                 await bot.send_message(chat_id=CHAT_ID, text=phrase)
                 counters["messages_sent"] += 1
+                if "письки" in phrase.lower():
+                    options = ["Побрил(-а) 😊👌", "Не побрил(-а) 😍😘"]
+                    await bot.send_poll(
+                        chat_id=CHAT_ID,
+                        question="Кто сбрил свою письку?",
+                        options=options,
+                        is_anonymous=False
+                    )
+		if "тима" in phrase.lower():
+                    options = ["Вырвет 🤢🤮", "Не вырвет 💪💪"]
+                    await bot.send_poll(
+                        chat_id=CHAT_ID,
+                        question="Тима вырвет на аттракционах?",
+                        options=options,
+                        is_anonymous=False
+                    )
+		if "зарифа" in phrase.lower():
+                    options = ["Вырвет 🤣🤣", "Не вырвет 😒😒"]
+                    await bot.send_poll(
+                        chat_id=CHAT_ID,
+                        question="Залифа вырвет на аттракционах?",
+                        options=options,
+                        is_anonymous=False
+                    )
+		if "рафиг" in phrase.lower():
+                    options = ["Вырвет 😢😭", "Не вырвет 🤩🤗"]
+                    await bot.send_poll(
+                        chat_id=CHAT_ID,
+                        question="Рафиг вырвет на аттракционах?",
+                        options=options,
+                        is_anonymous=False
+                    )
         next_send_time = datetime.datetime.now() + datetime.timedelta(seconds=3600)
         await asyncio.sleep(3600)
 
@@ -178,7 +228,6 @@ async def post_init(app):
 
 if __name__ == "__main__":
     app = ApplicationBuilder().token(BOT_TOKEN).post_init(post_init).build()
-    # Команды
     app.add_handler(CommandHandler("start", start_command))
     app.add_handler(CommandHandler("time", time_command))
     app.add_handler(CommandHandler("next", next_command))
@@ -186,8 +235,8 @@ if __name__ == "__main__":
     app.add_handler(CommandHandler("unmute", unmute_command))
     app.add_handler(CommandHandler("broadcast", broadcast_command))
     app.add_handler(CommandHandler("panic", panic_command))
+    app.add_handler(CommandHandler("piska", piska_command))
     app.add_handler(CommandHandler("stats", stats_command))
-    # Callback для кнопок
     app.add_handler(CallbackQueryHandler(callback_handler))
 
     print("Бот запущен!")

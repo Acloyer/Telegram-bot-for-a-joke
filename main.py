@@ -13,8 +13,8 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 if not BOT_TOKEN:
     raise RuntimeError("❌ BOT_TOKEN is not set")
 
-CHAT_ID = int(os.getenv["CHAT_ID"])
-ADMIN_ID = int(os.getenv["ADMIN_ID"])
+CHAT_ID = int(os.getenv("CHAT_ID") or 0)
+ADMIN_ID = int(os.getenv("ADMIN_ID") or 0)
 
 TRIP_TIME = datetime.datetime(2025, 6, 8, 8, 40)
 

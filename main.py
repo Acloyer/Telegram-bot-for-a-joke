@@ -2,8 +2,6 @@ import asyncio
 import datetime
 import random
 import os
-from dotenv import load_dotenv
-load_dotenv()
 from telegram import (
     Update,
     Bot,
@@ -11,10 +9,12 @@ from telegram import (
     InlineKeyboardMarkup,
 )
 
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+if not BOT_TOKEN:
+    raise RuntimeError("❌ BOT_TOKEN is not set")
 
-BOT_TOKEN = os.environ["BOT_TOKEN"]
-CHAT_ID = int(os.environ["CHAT_ID"])
-ADMIN_ID = int(os.environ["ADMIN_ID"])
+CHAT_ID = int(os.getenv["CHAT_ID"])
+ADMIN_ID = int(os.getenv["ADMIN_ID"])
 
 TRIP_TIME = datetime.datetime(2025, 6, 8, 8, 40)
 
